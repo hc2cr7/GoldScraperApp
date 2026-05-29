@@ -6,7 +6,8 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Force Ubuntu 22.04 to avoid the nasty compiler header bugs on 24
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       
@@ -19,15 +20,16 @@ jobs:
       - name: Generate Spec
         run: ~/.local/bin/buildozer init
         
-      - name: Update Spec Requirements & Force Accept License
+      - name: Update Spec Requirements & Natively Accept License
         run: |
-          # 1. Add your script dependencies
+          # 1. Inject your script dependencies
           sed -i 's/requirements = python3,kivy/requirements = python3,kivy,requests,beautifulsoup4/' buildozer.spec
-          # 2. Tell buildozer to auto-accept licenses natively
+          # 2. Toggle the native license acceptance configuration
           sed -i 's/# android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
           
       - name: Build with Buildozer
-        run: ~/.local/bin/buildozer android debug
+        # The ultimate insurance policy: pipes "yes" to any hidden console questions
+        run: yes | ~/.local/bin/buildozer android debug
         
       - name: Upload APK
         uses: actions/upload-artifact@v4
