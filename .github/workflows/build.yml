@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Get Buildozer
+      - name: Get Buildozer and Dependencies
         run: |
           pip3 install --user buildozer
           sudo apt update
@@ -19,10 +19,15 @@ jobs:
       - name: Generate Spec
         run: ~/.local/bin/buildozer init
         
-      - name: Update Spec Requirements & Accept License
+      - name: Update Spec Requirements
         run: |
           sed -i 's/requirements = python3,kivy/requirements = python3,kivy,requests,beautifulsoup4/' buildozer.spec
-          echo "android.accept_sdk_license = True" >> buildozer.spec
+          
+      - name: Force Accept Android SDK Licenses
+        run: |
+          mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+          echo -e "\n8933bad161ad4178b1185d1a37fdd41ea6bd44ec\nd56f11ed6d5b310e47d9526c588dfb9115bfd8b5\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+          echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
           
       - name: Build with Buildozer
         run: ~/.local/bin/buildozer android debug
