@@ -6,7 +6,6 @@ env:
 
 jobs:
   build:
-    # Force Ubuntu 22.04 to avoid the nasty compiler header bugs on 24
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -17,19 +16,37 @@ jobs:
           sudo apt update
           sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev tk-dev libgdbm-compat-dev liblzma-dev lzma
           
-      - name: Generate Spec
-        run: ~/.local/bin/buildozer init
-        
-      - name: Update Spec Requirements & Natively Accept License
+      - name: Create Custom Bulletproof Buildozer Spec
         run: |
-          # 1. Inject your script dependencies
-          sed -i 's/requirements = python3,kivy/requirements = python3,kivy,requests,beautifulsoup4/' buildozer.spec
-          # 2. Toggle the native license acceptance configuration
-          sed -i 's/# android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
+          cat << 'EOF' > buildozer.spec
+          [app]
+          title = Gold Scraper
+          package.name = goldscraper
+          package.domain = org.gold
+          source.dir = .
+          source.include_exts = py,png,jpg,kv,atlas
+          version = 0.1
+          requirements = python3,kivy,requests,beautifulsoup4,urllib3,idna,certifi,charset-normalizer
+          orientation = portrait
+          osx.kivy_version = 2.3.0
+          fullscreen = 1
+          android.archs = arm64-v8a
+          android.allow_backup = True
+          
+          # Stable Android SDK/NDK mapping to guarantee compile success
+          android.api = 33
+          android.minapi = 24
+          android.ndk = 25b
+          android.accept_sdk_license = True
+          android.skip_apk_rescale = True
+          
+          [buildozer]
+          log_level = 2
+          warn_on_root = 1
+          EOF
           
       - name: Build with Buildozer
-        # The ultimate insurance policy: pipes "yes" to any hidden console questions
-        run: yes | ~/.local/bin/buildozer android debug
+        run: ~/.local/bin/buildozer android debug
         
       - name: Upload APK
         uses: actions/upload-artifact@v4
